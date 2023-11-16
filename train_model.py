@@ -16,8 +16,6 @@ from torch.utils.data.distributed import DistributedSampler
 from transformers import AdamW, get_linear_schedule_with_warmup
 from models import build_or_load_gen_model
 from evaluator import smooth_bleu
-from evaluator.CodeBLEU import calc_code_bleu
-from evaluator.bleu import _bleu
 from data_handling import get_filenames, get_elapse_time, load_and_cache_gen_data
 from configs import add_args, set_seed, set_dist
 
@@ -202,7 +200,7 @@ def main():
                     bar.set_description("[{}] Train loss {}".format(
                         cur_epoch, round(train_loss, 3)))
 
-            if args.do_eval:
+            if True:
                 # Eval model with dev dataset
                 if 'dev_loss' in dev_dataset:
                     eval_examples, eval_data = dev_dataset['dev_loss']
@@ -255,6 +253,8 @@ def main():
                             output_dir, "pytorch_model.bin")
                         torch.save(model_to_save.state_dict(),
                                    output_model_file)
+                        model.save_pretrained('./')
+                        tokenizer.save_pretrained('./')
                         logger.info(
                             "Save the best ppl model into %s", output_model_file)
                 else:
@@ -267,8 +267,6 @@ def main():
                         logger.info(early_stop_str)
                         fa.write(early_stop_str)
                         break
-                logger.info("***** CUDA.empty_cache() *****")
-                torch.cuda.empty_cache()
                 if args.do_eval_bleu:
                     eval_examples, eval_data = load_and_cache_gen_data(args, args.dev_filename, pool, tokenizer, 'dev',
                                                                        only_src=True, is_sample=True)
@@ -315,8 +313,6 @@ def main():
                             logger.info(stop_early_str)
                             fa.write(stop_early_str)
                             break
-            logger.info("***** CUDA.empty_cache() *****")
-            torch.cuda.empty_cache()
 
         if args.data_num == -1:
             tb_writer.close()
